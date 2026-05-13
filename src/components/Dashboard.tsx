@@ -96,25 +96,11 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
           </div>
         </div>
         
-        <nav className="hidden lg:flex items-center gap-10 text-[11px] font-bold text-gray-500 uppercase tracking-widest">
-          <a href="#" className="hover:text-white transition-colors flex items-center gap-2">
-            <div className="w-1.5 h-1.5 rounded-full bg-[#F27D26]" /> View Market
-          </a>
-          <a href="#" className="hover:text-white transition-colors">Signals</a>
-          <a href="#" className="hover:text-white transition-colors">Strategies</a>
-        </nav>
-
-        <div className="flex items-center gap-4">
-          <button className="p-2 text-gray-400 hover:text-white transition-colors relative">
-            <Bell size={20} />
-            <div className="absolute top-2 right-2 w-2 h-2 bg-[#F27D26] rounded-full border-2 border-[#050505]" />
-          </button>
-          <div className="flex items-center gap-3 pl-4 border-l border-white/10">
+        <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center">
               <User size={18} className="text-gray-400" />
             </div>
           </div>
-        </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-6 py-12 md:px-12 md:py-20 flex flex-col items-center justify-center min-h-[calc(100vh-80px)]">
@@ -155,6 +141,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
               "Institutional Flow Tracker"
             ]}
             buttonText="Launch Signal Hub"
+            onClick={() => onNavigate('analysis')}
           />
         </section>
       </main>
@@ -166,11 +153,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
             <div className="w-[1px] h-6 bg-white/10" />
             <p className="text-xs text-gray-500 font-bold uppercase tracking-widest">© 2024 MKT AI Systems</p>
           </div>
-          <div className="flex gap-10 text-[10px] font-bold text-gray-500 uppercase tracking-widest">
-            <a href="#" className="hover:text-white transition-colors">API Docs</a>
-            <a href="#" className="hover:text-white transition-colors">Risk Disclosure</a>
-            <button onClick={() => onNavigate('admin')} className="hover:text-[#F27D26] transition-colors">Admin Terminal</button>
-          </div>
+
         </div>
       </footer>
     </div>
