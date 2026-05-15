@@ -9,6 +9,7 @@ import Dashboard from './components/Dashboard';
 import AIAnalysis from './components/AIAnalysis';
 import AdminPanel from './components/AdminPanel';
 import AdminLogin from './components/AdminLogin';
+import JoinChannelPopup from './components/JoinChannelPopup';
 
 export type View = 'home' | 'analysis' | 'admin';
 
@@ -68,6 +69,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[#050505]">
       {renderView()}
+      <JoinChannelPopup />
     </div>
   );
 }
