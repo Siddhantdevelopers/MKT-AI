@@ -40,6 +40,11 @@ async function startServer() {
 
   // --- API Routes ---
 
+  // Health Check
+  app.get('/api/health', (req, res) => {
+    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  });
+
   // User Auth
   app.post('/api/auth/signup', async (req, res) => {
     const { username, password } = req.body;
@@ -142,7 +147,7 @@ async function startServer() {
   } else {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
-    app.get('*all', (req, res) => {
+    app.get('*', (req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }
