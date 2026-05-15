@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Upload, X, BrainCircuit, ChevronRight, AlertCircle, TrendingDown, TrendingUp, ExternalLink, RefreshCcw, ArrowLeft, ShieldCheck, Zap, FileSearch } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
+import { api } from '../lib/api';
+import AuthModal from './AuthModal';
 
 interface AIAnalysisProps {
   onBack: () => void;
@@ -62,52 +64,46 @@ export default function AIAnalysis({ onBack }: AIAnalysisProps) {
   const [licenseKey, setLicenseKey] = useState('');
   const [isLicensed, setIsLicensed] = useState(false);
   const [licenseError, setLicenseError] = useState('');
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [user, setUser] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const activeLicense = localStorage.getItem('mkt_active_license');
-    if (activeLicense) {
-      const data = JSON.parse(activeLicense);
-      if (new Date(data.expiry) > new Date()) {
-        setIsLicensed(true);
-      } else {
-        localStorage.removeItem('mkt_active_license');
-      }
-    }
+    checkAuth();
   }, []);
 
-  const handleLicenseSubmit = (e: React.FormEvent) => {
+  const checkAuth = async () => {
+    try {
+      const data = await api.get('/api/auth/me');
+      setUser(data.user);
+      if (data.user?.license) {
+        const expiry = new Date(data.user.license.expiry);
+        if (expiry > new Date()) {
+          setIsLicensed(true);
+        }
+      }
+    } catch (err) {
+      console.error('Not authenticated');
+    }
+  };
+
+  const handleLicenseSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLicenseError('');
     
-    const savedLicenses = JSON.parse(localStorage.getItem('mkt_licenses') || '[]');
-    const license = savedLicenses.find((l: any) => l.key === licenseKey);
-
-    if (!license) {
-      setLicenseError('Invalid access token hash.');
+    if (!user) {
+      setShowAuthModal(true);
       return;
     }
 
-    if (license.claims >= license.maxClaims) {
-      setLicenseError('Token unit capacity reached.');
-      return;
+    try {
+      const data = await api.post('/api/license/activate', { key: licenseKey });
+      setIsLicensed(true);
+      setShowLicensePopup(false);
+      setUser({ ...user, license: data.license });
+    } catch (err: any) {
+      setLicenseError(err.message);
     }
-
-    // Update license claims
-    const updatedLicenses = savedLicenses.map((l: any) => 
-      l.key === licenseKey ? { ...l, claims: l.claims + 1 } : l
-    );
-    localStorage.setItem('mkt_licenses', JSON.stringify(updatedLicenses));
-
-    // Activate license for this user
-    const expiry = new Date();
-    expiry.setDate(expiry.getDate() + license.days);
-    
-    const activeData = { key: licenseKey, expiry: expiry.toISOString() };
-    localStorage.setItem('mkt_active_license', JSON.stringify(activeData));
-    
-    setIsLicensed(true);
-    setShowLicensePopup(false);
   };
 
   useEffect(() => {
@@ -135,6 +131,10 @@ export default function AIAnalysis({ onBack }: AIAnalysisProps) {
 
   const handleFileClick = () => {
     if (loading) return;
+    if (!user) {
+      setShowAuthModal(true);
+      return;
+    }
     if (!isLicensed) {
       setShowLicensePopup(true);
       return;
@@ -226,6 +226,16 @@ export default function AIAnalysis({ onBack }: AIAnalysisProps) {
 
   return (
     <div className="min-h-screen bg-[#020202] text-white overflow-x-hidden font-mono selection:bg-[#F27D26]/30">
+      <AuthModal 
+        isOpen={showAuthModal} 
+        onClose={() => setShowAuthModal(false)} 
+        onSuccess={(userData) => {
+          setUser(userData);
+          if (userData.license) {
+            setIsLicensed(true);
+          }
+        }}
+      />
       {/* Scanline and Grid Effects */}
       <div className="fixed inset-0 pointer-events-none z-50 terminal-scanline opacity-[0.02]" />
       <div className="fixed inset-0 pointer-events-none terminal-grid opacity-[0.03]" />

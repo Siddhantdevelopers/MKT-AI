@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { LayoutDashboard, Users, Key, Clock, ShieldCheck, ArrowLeft, Plus, Trash2, CheckCircle2 } from 'lucide-react';
+import { api } from '../lib/api';
 
 interface License {
   id: string;
@@ -11,25 +12,45 @@ interface License {
   createdAt: string;
 }
 
+interface User {
+  id: string;
+  username: string;
+  license: { key: string; expiry: string } | null;
+}
+
 interface AdminPanelProps {
   onBack: () => void;
 }
 
 export default function AdminPanel({ onBack }: AdminPanelProps) {
   const [licenses, setLicenses] = useState<License[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [newKey, setNewKey] = useState('');
   const [days, setDays] = useState(30);
   const [maxClaims, setMaxClaims] = useState(1);
-  const [activeTab, setActiveTab] = useState<'overview' | 'licenses'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'licenses' | 'users'>('overview');
 
   useEffect(() => {
-    const saved = localStorage.getItem('mkt_licenses');
-    if (saved) setLicenses(JSON.parse(saved));
+    fetchLicenses();
+    fetchUsers();
   }, []);
 
-  const saveLicenses = (updated: License[]) => {
-    setLicenses(updated);
-    localStorage.setItem('mkt_licenses', JSON.stringify(updated));
+  const fetchLicenses = async () => {
+    try {
+      const data = await api.get('/api/admin/licenses');
+      setLicenses(data);
+    } catch (err) {
+      console.error('Failed to fetch licenses:', err);
+    }
+  };
+
+  const fetchUsers = async () => {
+    try {
+      const data = await api.get('/api/admin/users');
+      setUsers(data);
+    } catch (err) {
+      console.error('Failed to fetch users:', err);
+    }
   };
 
   const generateKey = () => {
@@ -42,22 +63,29 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
     setNewKey(result);
   };
 
-  const addLicense = () => {
+  const addLicense = async () => {
     if (!newKey) return;
-    const license: License = {
-      id: crypto.randomUUID(),
-      key: newKey,
-      days,
-      maxClaims,
-      claims: 0,
-      createdAt: new Date().toISOString()
-    };
-    saveLicenses([license, ...licenses]);
-    setNewKey('');
+    try {
+      const license = {
+        key: newKey,
+        days,
+        maxClaims
+      };
+      await api.post('/api/admin/licenses', license);
+      fetchLicenses();
+      setNewKey('');
+    } catch (err) {
+      console.error('Failed to add license:', err);
+    }
   };
 
-  const deleteLicense = (id: string) => {
-    saveLicenses(licenses.filter(l => l.id !== id));
+  const deleteLicense = async (id: string) => {
+    try {
+      await api.delete(`/api/admin/licenses/${id}`);
+      fetchLicenses();
+    } catch (err) {
+      console.error('Failed to delete license:', err);
+    }
   };
 
   return (
@@ -97,6 +125,12 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
             >
               <Key size={16} /> License Management
             </button>
+            <button 
+              onClick={() => setActiveTab('users')}
+              className={`w-full flex items-center gap-4 px-4 py-3 rounded-lg border transition-all text-[10px] uppercase font-black tracking-widest ${activeTab === 'users' ? 'bg-[#F27D26]/10 border-[#F27D26]/30 text-[#F27D26]' : 'border-transparent text-gray-500 hover:text-white'}`}
+            >
+              <Users size={16} /> User Management
+            </button>
           </div>
 
           {/* Main Content */}
@@ -109,7 +143,7 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
                   </div>
                   <div>
                     <p className="text-[8px] text-gray-500 uppercase font-black tracking-widest">Active Users</p>
-                    <p className="text-3xl font-black">0</p>
+                    <p className="text-3xl font-black">{users.length}</p>
                   </div>
                 </div>
                 <div className="bg-white/[0.02] border border-white/5 p-6 rounded-2xl space-y-4">
@@ -227,6 +261,60 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
                           <tr>
                             <td colSpan={5} className="p-12 text-center text-gray-700 text-[8px] uppercase tracking-[0.4em] font-black">
                                No Tokens Initialized
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'users' && (
+              <div className="space-y-8">
+                <div className="bg-white/[0.02] border border-white/5 rounded-2xl overflow-hidden">
+                  <div className="p-4 border-b border-white/5 bg-white/[0.02]">
+                    <h3 className="text-[8px] font-black uppercase tracking-[0.4em] text-gray-500">Registered System Units</h3>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                      <thead>
+                        <tr className="border-b border-white/5 text-[7px] text-gray-500 uppercase font-black tracking-widest">
+                          <th className="p-4">Ident_Node</th>
+                          <th className="p-4">Access Status</th>
+                          <th className="p-4">Current Hash</th>
+                          <th className="p-4">Expiry Grid</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {users.map((u) => (
+                          <tr key={u.id} className="border-b border-white/5 hover:bg-white/[0.01] transition-colors">
+                            <td className="p-4">
+                               <div className="flex items-center gap-2">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-blue-500/50" />
+                                  <span className="text-[10px] font-bold text-white tracking-widest uppercase">{u.username}</span>
+                               </div>
+                            </td>
+                            <td className="p-4">
+                               {u.license ? (
+                                 <span className="text-[8px] px-2 py-0.5 bg-green-500/10 border border-green-500/20 text-green-500 font-bold uppercase rounded">Active</span>
+                               ) : (
+                                 <span className="text-[8px] px-2 py-0.5 bg-red-500/10 border border-red-500/20 text-red-500 font-bold uppercase rounded">Unauthorized</span>
+                               )}
+                            </td>
+                            <td className="p-4 text-[9px] text-gray-400 font-mono tracking-widest">
+                               {u.license?.key || 'NONE_INITIALIZED'}
+                            </td>
+                            <td className="p-4 text-[9px] text-gray-500">
+                               {u.license ? new Date(u.license.expiry).toLocaleString() : 'N/A'}
+                            </td>
+                          </tr>
+                        ))}
+                        {users.length === 0 && (
+                          <tr>
+                            <td colSpan={4} className="p-12 text-center text-gray-700 text-[8px] uppercase tracking-[0.4em] font-black">
+                               No Node Identities Found
                             </td>
                           </tr>
                         )}
