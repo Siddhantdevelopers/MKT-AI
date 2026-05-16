@@ -20,7 +20,7 @@ if (!fs.existsSync(LICENSES_FILE)) fs.writeFileSync(LICENSES_FILE, JSON.stringif
 const readData = (file: string) => JSON.parse(fs.readFileSync(file, 'utf8'));
 const writeData = (file: string, data: any) => fs.writeFileSync(file, JSON.stringify(data, null, 2));
 
-async function startServer() {
+export async function createServer() {
   const app = express();
   app.use(cors());
   app.use(express.json());
@@ -128,7 +128,8 @@ async function startServer() {
         key,
         days: Number(days),
         maxClaims: Number(maxClaims),
-        claims: 0, 
+        claims: 0,
+        claimantIds: [],
         createdAt: new Date().toISOString() 
       };
       
@@ -170,13 +171,18 @@ async function startServer() {
     }
 
     // Check capacity
-    if (license.claims >= license.maxClaims) {
+    const isAlreadyClaimant = license.claimantIds?.includes(req.user.id);
+    if (!isAlreadyClaimant && license.claims >= license.maxClaims) {
       return res.status(400).json({ error: 'License capacity reached: This key has been used by all allowed accounts.' });
     }
 
-    // Increment claims
-    license.claims += 1;
-    writeData(LICENSES_FILE, licenses);
+    // Increment claims if it's a new account
+    if (!isAlreadyClaimant) {
+      license.claims += 1;
+      if (!license.claimantIds) license.claimantIds = [];
+      license.claimantIds.push(req.user.id);
+      writeData(LICENSES_FILE, licenses);
+    }
 
     const expiry = new Date();
     expiry.setDate(expiry.getDate() + license.days);
@@ -211,9 +217,14 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-  });
+  return app;
 }
 
-startServer();
+// Support for standalone execution (Cloud Run, local)
+if (process.env.NODE_ENV !== 'test') {
+  createServer().then(app => {
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`Server running on http://localhost:${PORT}`);
+    });
+  });
+}
