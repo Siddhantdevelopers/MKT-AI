@@ -4,17 +4,28 @@ import cors from 'cors';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, query, where, Timestamp } from 'firebase/firestore';
+import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, query, where } from 'firebase/firestore';
 import firebaseConfig from './firebase-applet-config.json';
 
-// Initialize Firebase
-const firebaseApp = initializeApp(firebaseConfig);
-const db = getFirestore(firebaseApp, firebaseConfig.firestoreDatabaseId);
+console.log('Starting server initialization...');
+
+// Initialize Firebase Client SDK
+let db: any;
+try {
+  console.log('Initializing Firebase Client SDK with project ID:', firebaseConfig.projectId);
+  const firebaseApp = initializeApp(firebaseConfig);
+  // Using custom database ID if present in config
+  db = getFirestore(firebaseApp, firebaseConfig.firestoreDatabaseId);
+  console.log('Firebase Client SDK initialized successfully.');
+} catch (error) {
+  console.error('FAILED to initialize Firebase Client SDK:', error);
+}
 
 const PORT = 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'mktai-secret-key-123';
 
 export async function createServer() {
+  console.log('Creating server...');
   const app = express();
   app.use(cors());
   app.use(express.json());
@@ -109,7 +120,7 @@ export async function createServer() {
       const userDoc = await getDoc(doc(db, 'users', req.user.id));
       if (!userDoc.exists()) return res.sendStatus(404);
       const user = userDoc.data();
-      res.json({ user: { username: user.username, license: user.license } });
+      res.json({ user: { username: user?.username, license: user?.license } });
     } catch (err) {
       console.error('Auth me error:', err);
       res.status(500).json({ error: 'Internal server error' });
@@ -200,7 +211,7 @@ export async function createServer() {
       const user = userDoc.data();
 
       // If user already has THIS license and it's not expired, just return it
-      if (user.license && user.license.key === key) {
+      if (user?.license && user.license.key === key) {
         const expiry = new Date(user.license.expiry);
         if (expiry > new Date()) {
           return res.json({ license: user.license });
@@ -265,11 +276,13 @@ export async function createServer() {
 }
 
 // Support for standalone execution (Cloud Run, local)
-if (process.env.NODE_ENV !== 'test' && !process.env.VERCEL) {
+if (process.env.NODE_ENV !== 'test') {
   createServer().then(app => {
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`Server running on http://localhost:${PORT}`);
     });
+  }).catch(err => {
+    console.error('Failed to start server:', err);
   });
 }
 
