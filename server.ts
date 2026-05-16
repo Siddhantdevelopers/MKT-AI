@@ -25,6 +25,12 @@ async function startServer() {
   app.use(cors());
   app.use(express.json());
 
+  // Logging middleware
+  app.use((req, res, next) => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+    next();
+  });
+
   // --- Auth Middleware ---
   const authenticateToken = (req: any, res: any, next: any) => {
     const authHeader = req.headers['authorization'];
@@ -38,15 +44,15 @@ async function startServer() {
     });
   };
 
-  // --- API Routes ---
+  const apiRouter = express.Router();
 
   // Health Check
-  app.get('/api/health', (req, res) => {
+  apiRouter.get('/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
   });
 
   // User Auth
-  app.post('/api/auth/signup', async (req, res) => {
+  apiRouter.post('/auth/signup', async (req, res) => {
     const { username, password } = req.body;
     const users = readData(USERS_FILE);
     
@@ -63,7 +69,7 @@ async function startServer() {
     res.json({ token, user: { username: newUser.username, license: null } });
   });
 
-  app.post('/api/auth/login', async (req, res) => {
+  apiRouter.post('/auth/login', async (req, res) => {
     const { username, password } = req.body;
     const users = readData(USERS_FILE);
     const user = users.find((u: any) => u.username === username);
@@ -76,7 +82,7 @@ async function startServer() {
     res.json({ token, user: { username: user.username, license: user.license } });
   });
 
-  app.get('/api/auth/me', authenticateToken, (req: any, res) => {
+  apiRouter.get('/auth/me', authenticateToken, (req: any, res) => {
     const users = readData(USERS_FILE);
     const user = users.find((u: any) => u.id === req.user.id);
     if (!user) return res.sendStatus(404);
@@ -84,7 +90,7 @@ async function startServer() {
   });
 
   // Licenses (Admin)
-  app.get('/api/admin/licenses', (req, res) => {
+  apiRouter.get('/admin/licenses', (req, res) => {
     try {
       res.json(readData(LICENSES_FILE));
     } catch (err) {
@@ -93,7 +99,7 @@ async function startServer() {
     }
   });
 
-  app.get('/api/admin/users', (req, res) => {
+  apiRouter.get('/admin/users', (req, res) => {
     try {
       const users = readData(USERS_FILE);
       const sanitizedUsers = users.map((u: any) => {
@@ -107,7 +113,7 @@ async function startServer() {
     }
   });
 
-  app.post('/api/admin/licenses', (req, res) => {
+  apiRouter.post('/admin/licenses', (req, res) => {
     try {
       console.log('Provisioning new license:', req.body);
       const { key, days, maxClaims } = req.body;
@@ -136,7 +142,7 @@ async function startServer() {
     }
   });
 
-  app.delete('/api/admin/licenses/:id', (req, res) => {
+  apiRouter.delete('/admin/licenses/:id', (req, res) => {
     let licenses = readData(LICENSES_FILE);
     licenses = licenses.filter((l: any) => l.id !== req.params.id);
     writeData(LICENSES_FILE, licenses);
@@ -144,7 +150,7 @@ async function startServer() {
   });
 
   // License Validation (User)
-  app.post('/api/license/activate', authenticateToken, (req: any, res) => {
+  apiRouter.post('/license/activate', authenticateToken, (req: any, res) => {
     const { key } = req.body;
     const licenses = readData(LICENSES_FILE);
     const users = readData(USERS_FILE);
@@ -179,6 +185,15 @@ async function startServer() {
     writeData(USERS_FILE, users);
 
     res.json({ license: user.license });
+  });
+
+  // Mount API router
+  app.use('/api', apiRouter);
+
+  // API 404 handler
+  app.use('/api', (req, res) => {
+    console.warn(`[404] API route not found: ${req.method} ${req.originalUrl}`);
+    res.status(404).json({ error: `API route not found: ${req.method} ${req.originalUrl}` });
   });
 
   // --- Vite Setup ---

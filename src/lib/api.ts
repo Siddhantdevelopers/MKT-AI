@@ -3,6 +3,7 @@ const API_URL = ''; // Relative path for the same-origin server
 export const api = {
   get: async (endpoint: string) => {
     const token = localStorage.getItem('mktai_token');
+    console.log(`DEBUG: API GET ${API_URL}${endpoint}`);
     const res = await fetch(`${API_URL}${endpoint}`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
@@ -23,6 +24,7 @@ export const api = {
   },
   post: async (endpoint: string, data: any) => {
     const token = localStorage.getItem('mktai_token');
+    console.log(`DEBUG: API POST ${API_URL}${endpoint}`);
     const res = await fetch(`${API_URL}${endpoint}`, {
       method: 'POST',
       headers: { 
@@ -48,6 +50,7 @@ export const api = {
   },
   delete: async (endpoint: string) => {
     const token = localStorage.getItem('mktai_token');
+    console.log(`DEBUG: API DELETE ${API_URL}${endpoint}`);
     const res = await fetch(`${API_URL}${endpoint}`, {
       method: 'DELETE',
       headers: { 'Authorization': `Bearer ${token}` }

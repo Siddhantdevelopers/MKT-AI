@@ -222,7 +222,7 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
                       <button 
                         onClick={addLicense}
                         disabled={!newKey || provisioning}
-                        className="px-12 py-5 bg-[#F27D26] text-black text-[11px] font-black uppercase tracking-[0.2em] rounded-lg hover:bg-[#FF8C00] disabled:opacity-20 transition-all shadow-xl shadow-[#F27D26]/30 flex items-center justify-center min-w-[200px]"
+                        className="px-16 py-7 bg-[#F27D26] text-black text-[13px] font-black uppercase tracking-[0.3em] rounded-xl hover:bg-[#FF8C00] disabled:opacity-20 transition-all shadow-2xl shadow-[#F27D26]/40 flex items-center justify-center min-w-[260px] active:scale-95"
                       >
                         {provisioning ? 'Processing...' : 'Provision Key'}
                       </button>
