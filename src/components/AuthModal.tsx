@@ -104,16 +104,16 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                   disabled={loading}
                   className="w-full py-4 bg-[#F27D26] text-black text-[10px] font-black uppercase tracking-[0.2em] rounded-lg hover:bg-[#FF8C00] transition-all disabled:opacity-50"
                 >
-                  {loading ? 'Processing...' : isLogin ? 'Authenticate Access' : 'Create System Unit'}
+                  {loading ? 'Processing...' : isLogin ? 'Authenticate Access' : 'Register'}
                 </button>
               </form>
 
               <div className="pt-4 border-t border-white/5 w-full">
                 <button 
                   onClick={() => setIsLogin(!isLogin)}
-                  className="text-[8px] text-gray-500 hover:text-[#F27D26] uppercase font-bold tracking-widest transition-colors"
+                  className="text-[11px] text-gray-400 hover:text-[#F27D26] uppercase font-bold tracking-[0.15em] transition-colors"
                 >
-                  {isLogin ? "No account? Register Unit" : "Existing identity? Terminal Access"}
+                  {isLogin ? "No account? Register" : "Existing identity? Terminal Access"}
                 </button>
               </div>
             </div>

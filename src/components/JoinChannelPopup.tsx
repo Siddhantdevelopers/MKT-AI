@@ -56,7 +56,7 @@ export default function JoinChannelPopup() {
             <div className="space-y-1 pr-4">
               <p className="text-[8px] font-black text-[#F27D26] uppercase tracking-[0.2em]">Signal Alert</p>
               <h4 className="text-xs font-black text-white uppercase tracking-tight">Join Official Channel</h4>
-              <p className="text-[9px] text-gray-400 font-bold uppercase leading-tight opacity-70">Node access & system metrics transmission.</p>
+              <p className="text-[9px] text-gray-400 font-bold uppercase leading-tight opacity-70">Join Our Channel For signals and more updates</p>
             </div>
           </div>
 

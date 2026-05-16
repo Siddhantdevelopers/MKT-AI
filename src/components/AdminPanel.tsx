@@ -29,6 +29,8 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
   const [days, setDays] = useState(30);
   const [maxClaims, setMaxClaims] = useState(1);
   const [activeTab, setActiveTab] = useState<'overview' | 'licenses' | 'users'>('overview');
+  const [provisioning, setProvisioning] = useState(false);
+  const [provisionStatus, setProvisionStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
 
   useEffect(() => {
     fetchLicenses();
@@ -65,17 +67,25 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
 
   const addLicense = async () => {
     if (!newKey) return;
+    setProvisioning(true);
+    setProvisionStatus(null);
     try {
       const license = {
         key: newKey,
-        days,
-        maxClaims
+        days: days || 30,
+        maxClaims: maxClaims || 1
       };
       await api.post('/api/admin/licenses', license);
-      fetchLicenses();
+      await fetchLicenses();
       setNewKey('');
-    } catch (err) {
+      setProvisionStatus({ type: 'success', message: 'License provisioned successfully' });
+      // Clear status after 3 seconds
+      setTimeout(() => setProvisionStatus(null), 3000);
+    } catch (err: any) {
       console.error('Failed to add license:', err);
+      setProvisionStatus({ type: 'error', message: err.message || 'Failed to provision key' });
+    } finally {
+      setProvisioning(false);
     }
   };
 
@@ -187,7 +197,7 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
                        />
                     </div>
                     <div className="space-y-2">
-                       <label className="text-[7px] text-gray-500 uppercase font-black">Max Unit Claims</label>
+                       <label className="text-[7px] text-gray-500 uppercase font-black">Max Account Claims</label>
                        <input 
                          type="number" 
                          value={maxClaims} 
@@ -202,19 +212,35 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
                     </div>
                   </div>
 
-                  <div className="flex gap-4">
-                    <div className="flex-1 bg-black border border-white/10 rounded-lg p-3 flex items-center justify-between">
-                       <span className={`text-[10px] font-black tracking-widest ${newKey ? 'text-white' : 'text-gray-700'}`}>
-                         {newKey || 'HASH_NOT_GENERATED'}
-                       </span>
+                  <div className="flex flex-col gap-4">
+                    <div className="flex gap-4">
+                      <div className="flex-1 bg-black border border-white/10 rounded-lg p-3 flex items-center justify-between">
+                         <span className={`text-[10px] font-black tracking-widest ${newKey ? 'text-white' : 'text-gray-700'}`}>
+                           {newKey || 'HASH_NOT_GENERATED'}
+                         </span>
+                      </div>
+                      <button 
+                        onClick={addLicense}
+                        disabled={!newKey || provisioning}
+                        className="px-12 py-5 bg-[#F27D26] text-black text-[11px] font-black uppercase tracking-[0.2em] rounded-lg hover:bg-[#FF8C00] disabled:opacity-20 transition-all shadow-xl shadow-[#F27D26]/30 flex items-center justify-center min-w-[200px]"
+                      >
+                        {provisioning ? 'Processing...' : 'Provision Key'}
+                      </button>
                     </div>
-                    <button 
-                      onClick={addLicense}
-                      disabled={!newKey}
-                      className="px-8 bg-[#F27D26] text-black text-[9px] font-black uppercase tracking-[0.2em] rounded hover:bg-[#FF8C00] disabled:opacity-20 transition-all shadow-lg shadow-[#F27D26]/20"
-                    >
-                      Provision Key
-                    </button>
+
+                    {provisionStatus && (
+                      <motion.div 
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className={`p-3 rounded text-[8px] font-black uppercase tracking-widest border ${
+                          provisionStatus.type === 'success' 
+                            ? 'bg-green-500/10 border-green-500/20 text-green-500' 
+                            : 'bg-red-500/10 border-red-500/20 text-red-500'
+                        }`}
+                      >
+                        {provisionStatus.message}
+                      </motion.div>
+                    )}
                   </div>
                 </div>
 
@@ -275,7 +301,7 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
               <div className="space-y-8">
                 <div className="bg-white/[0.02] border border-white/5 rounded-2xl overflow-hidden">
                   <div className="p-4 border-b border-white/5 bg-white/[0.02]">
-                    <h3 className="text-[8px] font-black uppercase tracking-[0.4em] text-gray-500">Registered System Units</h3>
+                    <h3 className="text-[8px] font-black uppercase tracking-[0.4em] text-gray-500">Registered Accounts</h3>
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-left">

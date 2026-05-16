@@ -482,7 +482,7 @@ export default function AIAnalysis({ onBack }: AIAnalysisProps) {
                       href="https://t.me/+1a7Mti90G7o0NWU1" 
                       target="_blank" 
                       rel="noopener noreferrer"
-                      className="inline-block text-[8px] font-black uppercase tracking-[0.2em] text-[#F27D26] hover:text-[#FF8C00] transition-colors underline underline-offset-4"
+                      className="inline-block text-[12px] font-black uppercase tracking-[0.2em] text-[#F27D26] hover:text-[#FF8C00] transition-colors underline underline-offset-4"
                     >
                       Need Key? Get Access
                     </a>

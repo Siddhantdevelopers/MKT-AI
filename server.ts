@@ -85,26 +85,55 @@ async function startServer() {
 
   // Licenses (Admin)
   app.get('/api/admin/licenses', (req, res) => {
-    // In a real app, check admin token here
-    res.json(readData(LICENSES_FILE));
+    try {
+      res.json(readData(LICENSES_FILE));
+    } catch (err) {
+      console.error('Error reading licenses:', err);
+      res.status(500).json({ error: 'Failed to read licenses' });
+    }
   });
 
   app.get('/api/admin/users', (req, res) => {
-    const users = readData(USERS_FILE);
-    // Remove passwords before sending
-    const sanitizedUsers = users.map((u: any) => {
-      const { password, ...rest } = u;
-      return rest;
-    });
-    res.json(sanitizedUsers);
+    try {
+      const users = readData(USERS_FILE);
+      const sanitizedUsers = users.map((u: any) => {
+        const { password, ...rest } = u;
+        return rest;
+      });
+      res.json(sanitizedUsers);
+    } catch (err) {
+      console.error('Error reading users:', err);
+      res.status(500).json({ error: 'Failed to read users' });
+    }
   });
 
   app.post('/api/admin/licenses', (req, res) => {
-    const licenses = readData(LICENSES_FILE);
-    const newLicense = { ...req.body, id: Date.now().toString(), claims: 0, createdAt: new Date().toISOString() };
-    licenses.push(newLicense);
-    writeData(LICENSES_FILE, licenses);
-    res.json(newLicense);
+    try {
+      console.log('Provisioning new license:', req.body);
+      const { key, days, maxClaims } = req.body;
+      
+      if (!key || !days || !maxClaims) {
+        return res.status(400).json({ error: 'Missing required license fields' });
+      }
+
+      const licenses = readData(LICENSES_FILE);
+      const newLicense = { 
+        id: Date.now().toString(),
+        key,
+        days: Number(days),
+        maxClaims: Number(maxClaims),
+        claims: 0, 
+        createdAt: new Date().toISOString() 
+      };
+      
+      licenses.push(newLicense);
+      writeData(LICENSES_FILE, licenses);
+      console.log('License provisioned successfully:', newLicense.id);
+      res.json(newLicense);
+    } catch (err) {
+      console.error('Error provisioning license:', err);
+      res.status(500).json({ error: 'Internal server error during provisioning' });
+    }
   });
 
   app.delete('/api/admin/licenses/:id', (req, res) => {
@@ -122,15 +151,30 @@ async function startServer() {
     
     const license = licenses.find((l: any) => l.key === key);
     if (!license) return res.status(404).json({ error: 'Invalid license key' });
-    if (license.claims >= license.maxClaims) return res.status(400).json({ error: 'License capacity reached' });
 
+    const user = users.find((u: any) => u.id === req.user.id);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    // If user already has THIS license and it's not expired, just return it
+    if (user.license && user.license.key === key) {
+      const expiry = new Date(user.license.expiry);
+      if (expiry > new Date()) {
+        return res.json({ license: user.license });
+      }
+    }
+
+    // Check capacity
+    if (license.claims >= license.maxClaims) {
+      return res.status(400).json({ error: 'License capacity reached: This key has been used by all allowed accounts.' });
+    }
+
+    // Increment claims
     license.claims += 1;
     writeData(LICENSES_FILE, licenses);
 
     const expiry = new Date();
     expiry.setDate(expiry.getDate() + license.days);
     
-    const user = users.find((u: any) => u.id === req.user.id);
     user.license = { key, expiry: expiry.toISOString() };
     writeData(USERS_FILE, users);
 
