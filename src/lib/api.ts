@@ -21,7 +21,17 @@ export const api = {
     if (contentType && contentType.includes('application/json')) {
       return res.json();
     }
-    throw new Error('API returned non-JSON response');
+    
+    // If not JSON but successful, might be a 404 page or something else returned as 200
+    if (res.ok) {
+      const text = await res.text();
+      if (text.includes('<!doctype html>')) {
+        throw new Error('API returned HTML instead of JSON. This usually means a 404 or a routing issue.');
+      }
+      return text;
+    }
+    
+    throw new Error(`API request failed with status ${res.status}`);
   },
   post: async (endpoint: string, data: any) => {
     const token = localStorage.getItem('mktai_token');

@@ -1,0 +1,49 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Represents a registered user in the system.",
+      "type": "object",
+      "properties": {
+        "username": { "type": "string" },
+        "password": { "type": "string" },
+        "license": {
+          "type": "object",
+          "properties": {
+            "key": { "type": "string" },
+            "expiry": { "type": "string", "format": "date-time" }
+          }
+        },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["username", "password"]
+    },
+    "License": {
+      "title": "License",
+      "description": "Represents a license key that can be claimed by users.",
+      "type": "object",
+      "properties": {
+        "key": { "type": "string" },
+        "days": { "type": "number" },
+        "maxClaims": { "type": "number" },
+        "claims": { "type": "number" },
+        "claimantIds": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["key", "days", "maxClaims"]
+    }
+  },
+  "firestore": {
+    "users": {
+      "schema": "User",
+      "description": "Collection of users."
+    },
+    "licenses": {
+      "schema": "License",
+      "description": "Collection of available licenses."
+    }
+  }
+}

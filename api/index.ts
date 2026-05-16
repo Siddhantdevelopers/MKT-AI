@@ -1,6 +1,10 @@
 import { createServer } from '../server';
 
+let cachedApp: any = null;
+
 export default async function handler(req: any, res: any) {
-  const app = await createServer();
-  return app(req, res);
+  if (!cachedApp) {
+    cachedApp = await createServer();
+  }
+  return cachedApp(req, res);
 }

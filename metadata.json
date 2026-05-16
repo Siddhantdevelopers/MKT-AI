@@ -2,5 +2,7 @@
   "name": "MKT AI",
   "description": "AI-powered market analysis terminal for technical chart patterns and trading signals.",
   "requestFramePermissions": [],
-  "majorCapabilities": []
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }

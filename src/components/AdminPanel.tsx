@@ -40,18 +40,20 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
   const fetchLicenses = async () => {
     try {
       const data = await api.get('/api/admin/licenses');
-      setLicenses(data);
+      setLicenses(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Failed to fetch licenses:', err);
+      setLicenses([]);
     }
   };
 
   const fetchUsers = async () => {
     try {
       const data = await api.get('/api/admin/users');
-      setUsers(data);
+      setUsers(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Failed to fetch users:', err);
+      setUsers([]);
     }
   };
 
