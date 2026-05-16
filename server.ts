@@ -194,7 +194,7 @@ export async function createServer() {
   });
 
   // Mount API router
-  app.use('/api', apiRouter);
+  app.use(['/api', '/'], apiRouter);
 
   // API 404 handler
   app.use('/api', (req, res) => {
@@ -209,7 +209,7 @@ export async function createServer() {
       appType: 'spa',
     });
     app.use(vite.middlewares);
-  } else {
+  } else if (!process.env.VERCEL) {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
     app.get('*', (req, res) => {
