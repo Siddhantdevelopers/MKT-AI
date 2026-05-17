@@ -4,17 +4,16 @@ import cors from 'cors';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, query, where } from 'firebase/firestore';
+import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, query, where, collectionGroup } from 'firebase/firestore';
 import firebaseConfig from './firebase-applet-config.json';
 
-console.log('Starting server initialization...');
+console.log('Starting server initialization with Client SDK...');
 
 // Initialize Firebase Client SDK
 let db: any;
 try {
-  console.log('Initializing Firebase Client SDK with project ID:', firebaseConfig.projectId);
   const firebaseApp = initializeApp(firebaseConfig);
-  // Using custom database ID if present in config
+  // Target the specific database ID from config
   db = getFirestore(firebaseApp, firebaseConfig.firestoreDatabaseId);
   console.log('Firebase Client SDK initialized successfully.');
 } catch (error) {
@@ -59,6 +58,7 @@ export async function createServer() {
   // User Auth
   apiRouter.post('/auth/signup', async (req, res) => {
     try {
+      if (!db) throw new Error('Database not initialized');
       const { username, password } = req.body;
       
       const usersRef = collection(db, 'users');
@@ -91,6 +91,7 @@ export async function createServer() {
 
   apiRouter.post('/auth/login', async (req, res) => {
     try {
+      if (!db) throw new Error('Database not initialized');
       const { username, password } = req.body;
       const usersRef = collection(db, 'users');
       const q = query(usersRef, where('username', '==', username));
@@ -117,6 +118,7 @@ export async function createServer() {
 
   apiRouter.get('/auth/me', authenticateToken, async (req: any, res) => {
     try {
+      if (!db) throw new Error('Database not initialized');
       const userDoc = await getDoc(doc(db, 'users', req.user.id));
       if (!userDoc.exists()) return res.sendStatus(404);
       const user = userDoc.data();
@@ -130,8 +132,9 @@ export async function createServer() {
   // Licenses (Admin)
   apiRouter.get('/admin/licenses', async (req, res) => {
     try {
+      if (!db) throw new Error('Database not initialized');
       const licensesSnapshot = await getDocs(collection(db, 'licenses'));
-      const licenses = licensesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const licenses = licensesSnapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
       res.json(licenses);
     } catch (err) {
       console.error('Error reading licenses:', err);
@@ -141,8 +144,9 @@ export async function createServer() {
 
   apiRouter.get('/admin/users', async (req, res) => {
     try {
+      if (!db) throw new Error('Database not initialized');
       const usersSnapshot = await getDocs(collection(db, 'users'));
-      const users = usersSnapshot.docs.map(doc => {
+      const users = usersSnapshot.docs.map((doc: any) => {
         const data = doc.data();
         const { password, ...rest } = data;
         return { id: doc.id, ...rest };
@@ -156,6 +160,7 @@ export async function createServer() {
 
   apiRouter.post('/admin/licenses', async (req, res) => {
     try {
+      if (!db) throw new Error('Database not initialized');
       const { key, days, maxClaims } = req.body;
       
       if (!key || !days || !maxClaims) {
@@ -182,6 +187,7 @@ export async function createServer() {
 
   apiRouter.delete('/admin/licenses/:id', async (req, res) => {
     try {
+      if (!db) throw new Error('Database not initialized');
       await deleteDoc(doc(db, 'licenses', req.params.id));
       res.sendStatus(200);
     } catch (err) {
@@ -193,6 +199,7 @@ export async function createServer() {
   // License Validation (User)
   apiRouter.post('/license/activate', authenticateToken, async (req: any, res) => {
     try {
+      if (!db) throw new Error('Database not initialized');
       const { key } = req.body;
       
       const licensesRef = collection(db, 'licenses');
